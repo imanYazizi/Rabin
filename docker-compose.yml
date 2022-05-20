@@ -1,0 +1,48 @@
+version: '3.1'
+services:
+
+    db:
+        image: mariadb:10.3
+        environment:
+            MYSQL_DATABASE: ${DB_DATABASE}
+            MYSQL_USER: ${DB_USERNAME}
+            MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}
+        volumes:
+            - db_data:/var/lib/mysql
+
+    phpmyadmin:
+        image: phpmyadmin
+        ports:
+            - ${PHPMYADMIN_PORT}:80
+        environment:
+            - PMA_ARBITRARY=1
+            - MYSQL_USER=${DB_USERNAME}
+            - PMA_PASSWORD=${DB_PASSWORD}
+        depends_on:
+            - db
+
+    rabin:
+        image: rabin:latest
+        build:
+            context: .
+#        entrypoint: tail
+#        command: -f /dev/null
+        environment:
+            - PGID=0
+            - PUID=0
+            - VIRTUAL_HOST=rabin.karo.pro
+            - DB_PASSWORD=${DB_PASSWORD}
+        ports:
+            - 127.0.0.1:${APP_PUBLIC_PORT}:80
+        depends_on:
+            - db
+        volumes:
+            - .:/var/www/html
+
+volumes:
+    db_data:
+
+networks:
+    default:
+        external:
+            name: nginx-proxy
